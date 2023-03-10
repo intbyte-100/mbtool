@@ -43,22 +43,10 @@ pub(crate) fn generate_project(project: &Project) {
         config.push("modconfig.json");
         let mut config = File::create(config).unwrap();
 
-        let mut languages = String::new();
-
-        for (index, i) in project.languages.iter().enumerate() {
-            match i {
-                ProjectLanguages::Js => languages.push_str("\"js\""),
-                ProjectLanguages::Ts => languages.push_str("\"ts\"")
-            }
-            if index < project.languages.len() - 1{
-                languages.push(',');
-            }
-        }
-
         write!(
             config,
-            "{{\n\t\"mod_name\" : \"{}\",\n\t\"author\" : \"{}\",\n\t\"sdk\" : \"{}\",\n\t\"languages\" : [{}]\n}}",
-            project.mod_name, project.author, "build/sdk", languages
+            "{}",
+            serde_json::to_string_pretty(&project).unwrap()
         )
         .unwrap();
     }

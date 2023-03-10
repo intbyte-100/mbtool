@@ -8,6 +8,7 @@ use io::Write;
 use std::fs;
 use std::io;
 use std::path::Path;
+use std::path::PathBuf;
 use std::process::exit;
 
 use colored::*;
@@ -24,6 +25,8 @@ fn main() {
             "help" => help_command(),
             "new" => new_project(&project_name_from_args()),
             "build" => build_project(),
+            "info" => get_project().print_info(),
+            
             _ => {
                 println!("{}", "Error: unknown command".red());
                 help_command();
@@ -46,12 +49,31 @@ fn project_name_from_args() -> String {
     std::env::args().nth(2).unwrap()
 }
 
+fn get_project() -> Project {
+    let mut path = PathBuf::from("modconfig.json");
+
+    if !path.is_file() {
+        path = PathBuf::from(std::env::args().nth(2).unwrap_or_else(| | {
+            println!("{}\n\t{}\n\t{}", 
+            "Error: cannot find project".red(), "modconfig.json is not exist in current directory or project is not selected as argument".red() , "try going to the project directory and run 'mbtool build' or specife project manualy: 'mbtool build /path/to/project'".red());
+            exit(-1);
+        }));
+    }
+
+    let json = fs::read_to_string(path);
+    let project: Project = serde_json::from_str(json.unwrap().as_str()).unwrap_or_else(|error| {
+        println!("{}\n\t{}", "Error: invalid modconfig.json: ".red(), error.to_string().red());
+        exit(-1);
+    });
+    project
+}
 fn help_command() {
     println!("Usage: mbtool <command>");
     println!("Commands:");
     println!("    help       Display this help message");
     println!("    new        Create a new project");
     println!("    build      Build the project");
+    println!("    info       Print the project info");
 }
 
 fn new_project(name: &String) {
@@ -78,12 +100,12 @@ fn new_project(name: &String) {
     println!("{}", "Welcome to DragonBE mod master!".bold().green());
     print!("{}", "First of all, enter your mod name: ".green());
     io::stdout().flush().unwrap();
-    
+
     let mod_name = input_string();
 
     print!("{}", "Also please input your name: ".green());
     io::stdout().flush().unwrap();
-    
+
     let author = input_string();
 
     println!("{}", "Now, select the languages for developing:".green());
@@ -95,7 +117,7 @@ fn new_project(name: &String) {
     loop {
         print!("{}", "Please enter the number of your choise: ".green());
         io::stdout().flush().unwrap();
-       
+
         let languages = input_string();
         let number: i32 = languages.trim().parse().unwrap_or(0);
 
@@ -123,7 +145,7 @@ fn new_project(name: &String) {
         languages: project_languages,
     };
 
-    println!("{}", "Project information:".bold().green());
+    
     project.print_info();
 
     loop {
@@ -133,7 +155,7 @@ fn new_project(name: &String) {
         let asnwer = input_string();
 
         match asnwer.trim() {
-            "y" => { generator::generate_project(&project)}
+            "y" => generator::generate_project(&project),
             "n" => fs::remove_dir(path).unwrap(),
 
             val => {
