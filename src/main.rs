@@ -26,7 +26,7 @@ fn main() {
             "new" => new_project(&project_name_from_args()),
             "build" => build_project(),
             "info" => get_project().print_info(),
-            
+
             _ => {
                 println!("{}", "Error: unknown command".red());
                 help_command();
@@ -55,14 +55,35 @@ fn get_project() -> Project {
     if !path.is_file() {
         path = PathBuf::from(std::env::args().nth(2).unwrap_or_else(| | {
             println!("{}\n\t{}\n\t{}", 
-            "Error: cannot find project".red(), "modconfig.json is not exist in current directory or project is not selected as argument".red() , "try going to the project directory and run 'mbtool build' or specife project manualy: 'mbtool build /path/to/project'".red());
+            "Error: cannot find the project".red(), "modconfig.json is not exist in the current directory or the project is not selected by argument".red() , 
+            "try going to the project directory and run 'mbtool build' or specife project manualy: 'mbtool build /path/to/project'".red());
             exit(-1);
         }));
+
+        if !path.exists() {
+            println!("{}",format!("Error: the directory '{} is not exists'!", path.to_str().unwrap()).red());
+            exit(-1);
+        }
+
+        if path.is_dir() {
+            path.push("modconfig.json");
+        } else {
+            println!("{}", format!("Error: '{}' is not directory!", path.to_str().unwrap()).red());
+            exit(-1)
+        }
     }
 
-    let json = fs::read_to_string(path);
-    let project: Project = serde_json::from_str(json.unwrap().as_str()).unwrap_or_else(|error| {
-        println!("{}\n\t{}", "Error: invalid modconfig.json: ".red(), error.to_string().red());
+    let json = fs::read_to_string(path).unwrap_or_else(|_| {
+        println!("{}", "Error: 'modconfig.json' is not exist!");
+        exit(-1);
+    });
+
+    let project: Project = serde_json::from_str(json.as_str()).unwrap_or_else(|error| {
+        println!(
+            "{}\n\t{}",
+            "Error: invalid modconfig.json: ".red(),
+            error.to_string().red()
+        );
         exit(-1);
     });
     project
@@ -145,7 +166,6 @@ fn new_project(name: &String) {
         languages: project_languages,
     };
 
-    
     project.print_info();
 
     loop {
