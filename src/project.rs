@@ -1,14 +1,18 @@
-use std::path::PathBuf;
+use std::fs;
+use std::{path::PathBuf, process::exit};
 
 use colored::Colorize;
 use serde::{de::Visitor, Deserialize, Deserializer, Serialize, Serializer};
+
+use crate::compilers::toolchain::Toolchain;
+use crate::compilers::ts::TsCompiler;
 
 pub(crate) enum ProjectLanguages {
     Js,
     Ts,
 }
 
-struct LanguagesVisitor;
+pub(crate) struct LanguagesVisitor;
 
 impl<'de> Visitor<'de> for LanguagesVisitor {
     type Value = ProjectLanguages;
@@ -19,7 +23,10 @@ impl<'de> Visitor<'de> for LanguagesVisitor {
         match v {
             "js" => Ok(ProjectLanguages::Js),
             "ts" => Ok(ProjectLanguages::Ts),
-            _ => Err(E::custom(format!("Wrong languages selected: provided '{}', but expecting 'js' or 'ts'", v)))
+            _ => Err(E::custom(format!(
+                "Wrong languages selected: provided '{}', but expecting 'js' or 'ts'",
+                v
+            ))),
         }
     }
 
@@ -72,6 +79,13 @@ pub(crate) struct Project {
     pub languages: Vec<ProjectLanguages>,
 }
 
+impl PartialEq for ProjectLanguages {
+    #[inline]
+    fn eq(&self, other: &Self) -> bool {
+        core::mem::discriminant(self) == core::mem::discriminant(other)
+    }
+}
+
 impl Project {
     pub fn print_info(&self) {
         println!("{}", "Project information:".bold().green());
@@ -85,11 +99,35 @@ impl Project {
                 .bold()
         );
     }
-}
 
-impl PartialEq for ProjectLanguages {
-    #[inline]
-    fn eq(&self, other: &Self) -> bool {
-        core::mem::discriminant(self) == core::mem::discriminant(other)
+    pub fn build(&self) {
+        println!("{}", "Building the project...".blue());
+
+        let build_dir = self.path.clone().join("build");
+        if !build_dir.is_dir() {
+            fs::create_dir(build_dir).unwrap_or_else(|_| {
+                println!("{}", "Error: cannot create a build folder".red());
+                exit(-1);
+            });
+        }
+
+        let toolchain = Toolchain::get(self);
+
+        let toolchain = toolchain.unwrap_or_else(|| {
+            println!(
+                "{}",
+                "Error: a toolchain is required to build the project".red()
+            );
+            exit(-1);
+        });
+
+        let ts_compiler = TsCompiler::get(&toolchain);
+
+        self.languages.iter().for_each(|i| match i {
+            ProjectLanguages::Ts => ts_compiler.build_project(self),
+            _ => {}
+        });
+
+        println!("{}", "The build was completed saccessfully!".green().bold());
     }
 }

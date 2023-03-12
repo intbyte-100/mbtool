@@ -1,9 +1,16 @@
 mod generator;
 mod project;
 mod util;
+mod compilers {
+    pub mod nodejs;
+    pub mod toolchain;
+    pub mod ts;
+}
 
 use crate::project::Project;
 use crate::project::ProjectLanguages;
+use crate::util::request_yes_or_no;
+
 use io::Write;
 use std::fs;
 use std::io;
@@ -24,8 +31,8 @@ fn main() {
         match command.as_str() {
             "help" => help_command(),
             "new" => new_project(&project_name_from_args()),
-            "build" => build_project(),
-            "info" => get_project().print_info(),
+            "build" => load_project("build").build(),
+            "info" => load_project("info").print_info(),
 
             _ => {
                 println!("{}", "Error: unknown command".red());
@@ -49,26 +56,38 @@ fn project_name_from_args() -> String {
     std::env::args().nth(2).unwrap()
 }
 
-fn get_project() -> Project {
+fn load_project(cmd_name: &str) -> Project {
     let mut path = PathBuf::from("modconfig.json");
 
     if !path.is_file() {
         path = PathBuf::from(std::env::args().nth(2).unwrap_or_else(| | {
-            println!("{}\n\t{}\n\t{}", 
-            "Error: cannot find the project".red(), "modconfig.json is not exist in the current directory or the project is not selected by argument".red() , 
-            "try going to the project directory and run 'mbtool build' or specife project manualy: 'mbtool build /path/to/project'".red());
+            let message = format!(
+            "Error: cannot find the project\n\
+            \tmodconfig.json is not exist in the current directory or the project is not selected by argument\n\
+            \ttry going to the project directory and run 'mbtool {0}' or specife project manualy: 'mbtool {0} /path/to/project'", cmd_name);
+            println!("{}", message.red());
             exit(-1);
         }));
 
         if !path.exists() {
-            println!("{}",format!("Error: the directory '{} is not exists'!", path.to_str().unwrap()).red());
+            println!(
+                "{}",
+                format!(
+                    "Error: the directory '{} is not exists'!",
+                    path.to_str().unwrap()
+                )
+                .red()
+            );
             exit(-1);
         }
 
         if path.is_dir() {
             path.push("modconfig.json");
         } else {
-            println!("{}", format!("Error: '{}' is not directory!", path.to_str().unwrap()).red());
+            println!(
+                "{}",
+                format!("Error: '{}' is not directory!", path.to_str().unwrap()).red()
+            );
             exit(-1)
         }
     }
@@ -168,23 +187,8 @@ fn new_project(name: &String) {
 
     project.print_info();
 
-    loop {
-        print!("{}", "Create this project? [y/n]: ".green());
-        io::stdout().flush().unwrap();
-
-        let asnwer = input_string();
-
-        match asnwer.trim() {
-            "y" => generator::generate_project(&project),
-            "n" => fs::remove_dir(path).unwrap(),
-
-            val => {
-                println!("{}", format!("'{}' is incorrect choise!!!", val).red());
-                continue;
-            }
-        }
-        break;
+    match request_yes_or_no("Create this project?") {
+        true => generator::generate_project(&project),
+        false => fs::remove_dir(path).unwrap(),
     }
 }
-
-fn build_project() {}
