@@ -92,12 +92,7 @@ impl Project {
         println!("{}: {}", "Author".green(), self.author.yellow().bold());
         println!("{}: {}", "Mod name".green(), self.mod_name.yellow().bold());
         print!("{}: ", "Languages".green());
-        println!(
-            "{}",
-            ProjectLanguages::vec_to_string(&self.languages)
-                .yellow()
-                .bold()
-        );
+        println!("{}", ProjectLanguages::vec_to_string(&self.languages).yellow().bold());
     }
 
     pub fn build(&self) {
@@ -114,10 +109,7 @@ impl Project {
         let toolchain = Toolchain::get(self);
 
         let toolchain = toolchain.unwrap_or_else(|| {
-            println!(
-                "{}",
-                "Error: a toolchain is required to build the project".red()
-            );
+            println!("{}", "Error: a toolchain is required to build the project".red());
             exit(-1);
         });
 

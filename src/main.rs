@@ -60,34 +60,26 @@ fn load_project(cmd_name: &str) -> Project {
     let mut path = PathBuf::from("modconfig.json");
 
     if !path.is_file() {
-        path = PathBuf::from(std::env::args().nth(2).unwrap_or_else(| | {
+        path = PathBuf::from(std::env::args().nth(2).unwrap_or_else(|| {
             let message = format!(
-            "Error: cannot find the project\n\
+                "Error: cannot find the project\n\
             \tmodconfig.json is not exist in the current directory or the project is not selected by argument\n\
-            \ttry going to the project directory and run 'mbtool {0}' or specife project manualy: 'mbtool {0} /path/to/project'", cmd_name);
+            \ttry going to the project directory and run 'mbtool {0}' or specife project manualy: 'mbtool {0} /path/to/project'",
+                cmd_name
+            );
             println!("{}", message.red());
             exit(-1);
         }));
 
         if !path.exists() {
-            println!(
-                "{}",
-                format!(
-                    "Error: the directory '{} is not exists'!",
-                    path.to_str().unwrap()
-                )
-                .red()
-            );
+            println!("{}", format!("Error: the directory '{} is not exists'!", path.to_str().unwrap()).red());
             exit(-1);
         }
 
         if path.is_dir() {
             path.push("modconfig.json");
         } else {
-            println!(
-                "{}",
-                format!("Error: '{}' is not directory!", path.to_str().unwrap()).red()
-            );
+            println!("{}", format!("Error: '{}' is not directory!", path.to_str().unwrap()).red());
             exit(-1)
         }
     }
@@ -98,11 +90,7 @@ fn load_project(cmd_name: &str) -> Project {
     });
 
     let project: Project = serde_json::from_str(json.as_str()).unwrap_or_else(|error| {
-        println!(
-            "{}\n\t{}",
-            "Error: invalid modconfig.json: ".red(),
-            error.to_string().red()
-        );
+        println!("{}\n\t{}", "Error: invalid modconfig.json: ".red(), error.to_string().red());
         exit(-1);
     });
     project
@@ -120,10 +108,7 @@ fn new_project(name: &String) {
     let path = Path::new(name);
 
     if path.is_dir() {
-        println!(
-            "{}",
-            format!("Error: project with name '{}' is already exist", name).red()
-        );
+        println!("{}", format!("Error: project with name '{}' is already exist", name).red());
         exit(-1);
     } else if path.is_file() {
         println!("{}", "Error: file with same name is already exist".red());
@@ -168,10 +153,7 @@ fn new_project(name: &String) {
             }
             2 => project_languages.push(ProjectLanguages::Js),
             _ => {
-                println!(
-                    "{}",
-                    format!("'{}' is incorrect choise!!!", languages.trim()).red()
-                );
+                println!("{}", format!("'{}' is incorrect choise!!!", languages.trim()).red());
                 continue;
             }
         }

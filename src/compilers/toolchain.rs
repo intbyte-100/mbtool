@@ -1,7 +1,4 @@
-use std::{
-    fs,
-    path::{PathBuf},
-};
+use std::{fs, path::PathBuf};
 
 use colored::Colorize;
 
@@ -38,8 +35,6 @@ impl Toolchain {
             }
         }
 
-        Some(Toolchain {
-            path: toolchain_path,
-        })
+        Some(Toolchain { path: toolchain_path })
     }
 }

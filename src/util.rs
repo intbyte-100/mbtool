@@ -18,13 +18,11 @@ pub(crate) fn request_yes_or_no(request: &str) -> bool {
         let string = input_string();
         let answer = string.trim();
 
-        
         match answer {
             "y" => return true,
             "n" => return false,
             answer => {
-                let message =
-                    format!("'{}' is incorrect choice! Requires'y' or 'n'.", answer).red();
+                let message = format!("'{}' is incorrect choice! Requires'y' or 'n'.", answer).red();
                 println!("{}", message);
             }
         }
